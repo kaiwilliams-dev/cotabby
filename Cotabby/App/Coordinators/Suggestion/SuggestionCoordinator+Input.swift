@@ -267,6 +267,9 @@ extension SuggestionCoordinator {
             return false
         }
 
+        // The key right after an automatic typo fix either takes it back or accepts it.
+        noteInputForAutoCorrectionUndo(event)
+
         // A Tab held during post-acceptance regeneration answers the text as it was when pressed.
         // Once the user edits, moves, or dismisses, it must not accept whatever appears next: with
         // no overlay to hide, the usual `.hidden` release never runs on these idle paths.

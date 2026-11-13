@@ -107,6 +107,8 @@ final class SuggestionCoordinator: ObservableObject {
     /// delayed stream presentation. Work IDs and cancellation protect it when typing resumes.
     var typingCadence = TypingCadence()
     var dismissalMemory = SuggestionDismissalMemory()
+    /// The one automatic typo fix the writer may still undo, plus typos they already rejected.
+    var autoCorrectionUndo = AutoCorrectionUndoState()
     var delayedStreamPresentation: Task<Void, Never>?
 
     /// One ordinary on-device request may survive matching keys before it becomes visible.

@@ -14,7 +14,7 @@ nonisolated enum TypoGateDecision: Equatable {
     /// The current word looks misspelled and a correction is available. Offer it as a replace-the-word
     /// suggestion. `word` is the typo to replace; the accept path recomputes the edit from live text.
     case offerCorrection(word: String, correctedWord: String)
-    /// The user finished a misspelled word with Space and enabled automatic fixing. Apply the edit
+    /// The user finished a misspelled word with a boundary (Space or `, ! ?`) and enabled automatic fixing. Apply the edit
     /// immediately instead of creating an accept-key session.
     case applyCorrection(word: String, correctedWord: String)
 }
@@ -26,6 +26,10 @@ enum TypoGate {
         let suppressCompletionsOnTypo: Bool
         let offerTypoCorrections: Bool
         let automaticallyFixTypos: Bool
+        /// The writer's glossary text; a word spelled this way there is deliberate, never auto-fixed.
+        var glossary: String = ""
+        /// Lowercased typos the writer already reverted with Backspace / Cmd+Z this session.
+        var rejectedAutoFixes: Set<String> = []
     }
 
     /// Resolves the gate decision for the trailing word of `precedingText`.
@@ -54,7 +58,21 @@ enum TypoGate {
         guard let corrected = bestCorrection(current.word) else {
             return .suppress
         }
-        if settings.automaticallyFixTypos, current.delimiter == " " {
+        // Automatic mode rewrites text with no confirmation, so it demands more than the offer path:
+        // an unambiguous word boundary and a high-confidence, small edit. Anything weaker falls
+        // through to the green Tab-to-accept correction below.
+        if settings.automaticallyFixTypos,
+           AutoCorrectionPolicy.allowsBoundary(current.delimiter),
+           AutoCorrectionPolicy.isConfident(
+               AutoCorrectionPolicy.Candidate(
+                   typo: current.word,
+                   correction: corrected,
+                   precedingText: precedingText,
+                   glossary: settings.glossary,
+                   rejectedTypos: settings.rejectedAutoFixes
+               ),
+               delimiter: current.delimiter
+           ) {
             return .applyCorrection(word: current.word, correctedWord: corrected)
         }
         if settings.offerTypoCorrections {

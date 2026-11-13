@@ -123,14 +123,17 @@ enum TypoCorrectionReplacementPlanner {
         precedingText: String,
         expectedTypo: String,
         correctedWord: String,
-        requiresTrailingSpace: Bool
+        requiresTrailingSpace: Bool,
+        // The automatic path also fires on `, ! ?`; see `AutoCorrectionPolicy.allowsBoundary`.
+        allowsPunctuationBoundary: Bool = false
     ) -> TypoCorrectionReplacement? {
         let normalizedCorrection = correctedWord.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedCorrection.isEmpty,
               normalizedCorrection != expectedTypo,
               let live = CaretWordContext.committedWord(in: precedingText),
               live.word == expectedTypo,
-              !requiresTrailingSpace || live.delimiter == " " else {
+              !requiresTrailingSpace || live.delimiter == " "
+                  || (allowsPunctuationBoundary && AutoCorrectionPolicy.allowsBoundary(live.delimiter)) else {
             return nil
         }
 

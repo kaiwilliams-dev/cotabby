@@ -588,7 +588,9 @@ extension SuggestionCoordinator {
             settings: TypoGate.Settings(
                 suppressCompletionsOnTypo: settingsSnapshot.suppressCompletionsOnTypo,
                 offerTypoCorrections: settingsSnapshot.offerTypoCorrections,
-                automaticallyFixTypos: settingsSnapshot.automaticallyFixTypos
+                automaticallyFixTypos: settingsSnapshot.automaticallyFixTypos,
+                glossary: settingsSnapshot.extendedContext,
+                rejectedAutoFixes: autoCorrectionUndo.rejectedTypos
             ),
             isTypo: { spellChecker.isTypo($0) },
             bestCorrection: {
@@ -687,7 +689,8 @@ extension SuggestionCoordinator {
             precedingText: rawContext.precedingText,
             expectedTypo: typoWord,
             correctedWord: correctedWord,
-            requiresTrailingSpace: true
+            requiresTrailingSpace: true,
+            allowsPunctuationBoundary: true
         ) else {
             clearSuggestion()
             hideOverlay(reason: "Overlay hidden because the automatic correction target changed.")
@@ -720,6 +723,13 @@ extension SuggestionCoordinator {
             return
         }
 
+        // Remember the fix so an immediate Backspace or Cmd+Z can take it back (see +AutoCorrectionUndo).
+        autoCorrectionUndo.recordFix(
+            typo: typoWord,
+            correction: correctedWord,
+            delimiter: CaretWordContext.committedWord(in: rawContext.precedingText)?.delimiter ?? " ",
+            at: ProcessInfo.processInfo.systemUptime
+        )
         focusModel.invalidateTransientCaretCaches()
         cancelPredictionWork()
         clearSuggestion(clearDiagnostics: false)
@@ -729,7 +739,7 @@ extension SuggestionCoordinator {
             "typo-auto-corrected",
             workID: workID,
             generation: liveContext.generation,
-            message: "Automatically replaced the completed misspelled word after Space.",
+            message: "Automatically replaced the completed misspelled word at a word boundary.",
             normalizedOutput: correctedWord
         )
         // Synthetic replacement is asynchronous from the host editor's perspective. Poll until AX

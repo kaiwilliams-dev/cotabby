@@ -70,11 +70,12 @@ final class TypoGateTests: XCTestCase {
         XCTAssertEqual(decision, .suppress)
     }
 
-    func test_punctuationDelimiterOffersButNeverAutoApplies() {
-        // A comma commits the word, but automatic fixing is reserved for a bare trailing space, so
-        // the correction is offered instead of applied.
+    func test_ambiguousPunctuationDelimiterOffersButNeverAutoApplies() {
+        // A semicolon commits the word, but it is not an unambiguous boundary for automatic fixing
+        // (`key;` mid-token), so the correction is offered instead of applied. Space and `, ! ?`
+        // do auto-apply; see `AutoCorrectionPolicy.allowsBoundary`.
         let decision = resolve(
-            precedingText: "hi my nmae,",
+            precedingText: "hi my nmae;",
             suppress: true,
             offer: true,
             automatic: true,
@@ -84,9 +85,9 @@ final class TypoGateTests: XCTestCase {
         XCTAssertEqual(decision, .offerCorrection(word: "nmae", correctedWord: "name"))
     }
 
-    func test_automaticOnlyWithNonSpaceDelimiterSuppresses() {
+    func test_automaticWithAmbiguousDelimiterSuppressesWhenOfferIsOff() {
         let decision = resolve(
-            precedingText: "hi my nmae,",
+            precedingText: "hi my nmae;",
             suppress: true,
             offer: false,
             automatic: true,
@@ -142,5 +143,51 @@ final class TypoGateTests: XCTestCase {
             corrections: ["nmae": "name"]
         )
         XCTAssertEqual(decision, .proceed)
+    }
+
+    // MARK: - Automatic-fix confidence and boundaries
+
+    private func autoResolve(
+        _ text: String,
+        typo: String,
+        correction: String,
+        rejected: Set<String> = [],
+        glossary: String = ""
+    ) -> TypoGateDecision {
+        TypoGate.resolve(
+            precedingText: text,
+            settings: .init(suppressCompletionsOnTypo: true, offerTypoCorrections: true,
+                            automaticallyFixTypos: true, glossary: glossary, rejectedAutoFixes: rejected),
+            isTypo: { $0 == typo },
+            bestCorrection: { $0 == typo ? correction : nil }
+        )
+    }
+
+    func test_autoFixAppliesAtSpaceAndSentencePunctuation() {
+        for delimiter in [" ", ",", "!", "?"] {
+            XCTAssertEqual(
+                autoResolve("see teh" + delimiter, typo: "teh", correction: "the"),
+                .applyCorrection(word: "teh", correctedWord: "the"), delimiter
+            )
+        }
+    }
+
+    func test_autoFixFallsBackToOfferedCorrectionOnAmbiguousBoundary() {
+        XCTAssertEqual(
+            autoResolve("see teh;", typo: "teh", correction: "the"),
+            .offerCorrection(word: "teh", correctedWord: "the")
+        )
+    }
+
+    func test_autoFixFallsBackToOfferWhenGuardsFail() {
+        // Too many edits for a 4-letter word.
+        XCTAssertEqual(autoResolve("see tehr ", typo: "tehr", correction: "other"),
+                       .offerCorrection(word: "tehr", correctedWord: "other"))
+        // The writer already reverted this one.
+        XCTAssertEqual(autoResolve("see teh ", typo: "teh", correction: "the", rejected: ["teh"]),
+                       .offerCorrection(word: "teh", correctedWord: "the"))
+        // Deliberate spelling from the glossary.
+        XCTAssertEqual(autoResolve("see teh ", typo: "teh", correction: "the", glossary: "teh"),
+                       .offerCorrection(word: "teh", correctedWord: "the"))
     }
 }
