@@ -67,3 +67,17 @@ extension SuggestionCoordinator {
         }
     }
 }
+
+extension SuggestionCoordinator {
+    /// The settings a *request* is built from: the live snapshot plus a short note of the writer's own
+    /// names, jargon and repeated phrases (`PersonalVocabulary.promptNote`). Added here rather than in
+    /// the stored snapshot so the snapshot's equality (which drives settings-change resets) is
+    /// untouched and a changed vocabulary file is picked up on the next request.
+    var requestSettings: SuggestionSettingsSnapshot {
+        guard let note = spellChecker.personalVocabulary().promptNote() else { return settingsSnapshot }
+        var augmented = settingsSnapshot
+        augmented.extendedContext = augmented.extendedContext.isEmpty
+            ? note : augmented.extendedContext + "\n" + note
+        return augmented
+    }
+}

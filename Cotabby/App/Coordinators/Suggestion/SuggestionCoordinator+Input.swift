@@ -207,7 +207,7 @@ extension SuggestionCoordinator {
     /// the routed engine to prime itself. Generation 0 is intentional — prewarm requests must not
     /// burn real generation numbers, because those drive the stale-result drop logic.
     private func prewarmEngineForCurrentField(rawContext: FocusedInputSnapshot) {
-        let settings = settingsSnapshot
+        let settings = requestSettings
         let configuration = configuration
         let suggestionEngine = suggestionEngine
         Task { @MainActor [weak self] in

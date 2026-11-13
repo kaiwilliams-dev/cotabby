@@ -123,7 +123,7 @@ extension SuggestionCoordinator {
         let clipboardContext = pinnedClipboardContext(rawContext: rawContext)
         let requestBuildResult = SuggestionRequestFactory.buildRequest(
             context: context,
-            settings: settingsSnapshot,
+            settings: requestSettings,
             configuration: configuration,
             clipboardContext: clipboardContext,
             visualContextSummary: visualContextSummary,
@@ -286,7 +286,7 @@ extension SuggestionCoordinator {
         let clipboardContext = pinnedClipboardContext(rawContext: optimistic)
         let requestBuildResult = SuggestionRequestFactory.buildRequest(
             context: context,
-            settings: settingsSnapshot,
+            settings: requestSettings,
             configuration: configuration,
             clipboardContext: clipboardContext,
             visualContextSummary: visualContextSummary,
@@ -356,7 +356,7 @@ extension SuggestionCoordinator {
         let precedingText = context.precedingText
         let requestBuildResult = SuggestionRequestFactory.buildRequest(
             context: context,
-            settings: settingsSnapshot,
+            settings: requestSettings,
             configuration: configuration,
             clipboardContext: pinnedClipboardContext(rawContext: optimistic),
             visualContextSummary: permissionManager.screenRecordingGranted
@@ -590,7 +590,8 @@ extension SuggestionCoordinator {
                 offerTypoCorrections: settingsSnapshot.offerTypoCorrections,
                 automaticallyFixTypos: settingsSnapshot.automaticallyFixTypos,
                 glossary: settingsSnapshot.extendedContext,
-                rejectedAutoFixes: autoCorrectionUndo.rejectedTypos
+                rejectedAutoFixes: autoCorrectionUndo.rejectedTypos,
+                curatedFixes: spellChecker.personalVocabulary().corrections
             ),
             isTypo: { spellChecker.isTypo($0) },
             bestCorrection: {
@@ -643,6 +644,10 @@ extension SuggestionCoordinator {
     /// multilingual context, a cold index, or a missing SymSpell candidate all fall back to the
     /// user's automatic-language macOS spell checker.
     private func bestCorrection(for word: String, precedingText: String) -> String? {
+        // A reviewed fix beats any inferred guess.
+        if let confirmed = spellChecker.curatedCorrection(for: word) {
+            return confirmed
+        }
         let enabledLanguages = SpellingDictionaryCatalog.languages(
             for: settingsSnapshot.enabledSpellingDictionaryCodes
         )

@@ -30,6 +30,9 @@ enum TypoGate {
         var glossary: String = ""
         /// Lowercased typos the writer already reverted with Backspace / Cmd+Z this session.
         var rejectedAutoFixes: Set<String> = []
+        /// Reviewed typo -> correction pairs (lowercased typo). A matching pair is trusted without the
+        /// edit-distance limit, because a person or a review already confirmed it.
+        var curatedFixes: [String: String] = [:]
     }
 
     /// Resolves the gate decision for the trailing word of `precedingText`.
@@ -69,7 +72,8 @@ enum TypoGate {
                    correction: corrected,
                    precedingText: precedingText,
                    glossary: settings.glossary,
-                   rejectedTypos: settings.rejectedAutoFixes
+                   rejectedTypos: settings.rejectedAutoFixes,
+                   isCurated: settings.curatedFixes[current.word.lowercased()]?.lowercased() == corrected.lowercased()
                ),
                delimiter: current.delimiter
            ) {

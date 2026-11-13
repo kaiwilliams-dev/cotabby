@@ -20,6 +20,10 @@ final class CurrentWordSpellChecker {
     /// avoids cross-contamination with whatever spellcheck state other apps have armed.
     private let documentTag: Int
 
+    /// The writer's own vocabulary and confirmed typo fixes. Injected by the app environment; the
+    /// default is empty so tests and previews behave exactly like the system checker alone.
+    var personalVocabulary: () -> PersonalVocabulary = { .empty }
+
     init() {
         documentTag = NSSpellChecker.uniqueSpellDocumentTag()
         // We deliberately do not mutate `NSSpellChecker.shared` (e.g. forcing
@@ -36,6 +40,11 @@ final class CurrentWordSpellChecker {
     /// punctuation (`nmae,`) where the flagged range stops short of the punctuation.
     func isTypo(_ word: String) -> Bool {
         guard !word.isEmpty else { return false }
+        // The writer's own words are never typos, and a confirmed typo is one even when the system
+        // dictionary happens to accept it.
+        let personal = personalVocabulary()
+        if personal.isKnown(word) { return false }
+        if personal.correction(for: word) != nil { return true }
         let misspelledRange = NSSpellChecker.shared.checkSpelling(
             of: word,
             startingAt: 0,
@@ -81,6 +90,7 @@ final class CurrentWordSpellChecker {
     /// The single instant correction to offer for `word`: the top native guess that is a different
     /// single word, recased to match the typo's capitalization. `nil` when there is no usable guess.
     func bestCorrection(for word: String) -> String? {
+        if let confirmed = curatedCorrection(for: word) { return confirmed }
         let candidate = nativeCorrections(for: word)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { candidate in
@@ -94,5 +104,11 @@ final class CurrentWordSpellChecker {
             return nil
         }
         return TypoCaseTransfer.applying(caseOf: word, to: candidate)
+    }
+
+    /// A fix the writer (or the bundled seed) has confirmed for exactly this misspelling, recased to
+    /// match the typo. Preferred over every guess because it is reviewed, not inferred.
+    func curatedCorrection(for word: String) -> String? {
+        personalVocabulary().correction(for: word).map { TypoCaseTransfer.applying(caseOf: word, to: $0) }
     }
 }

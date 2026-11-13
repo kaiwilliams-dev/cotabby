@@ -39,6 +39,8 @@ nonisolated enum AutoCorrectionPolicy {
         let glossary: String
         /// Lowercased typos the writer already reverted once; never auto-applied again this session.
         let rejectedTypos: Set<String>
+        /// The pair was confirmed by the writer or the bundled seed, so edit distance is not consulted.
+        var isCurated: Bool = false
     }
 
     static func isConfident(_ candidate: Candidate, delimiter: String) -> Bool {
@@ -52,6 +54,7 @@ nonisolated enum AutoCorrectionPolicy {
         }
         guard !writerUsesSpelling(candidate) else { return false }
 
+        if candidate.isCurated { return true }
         let distance = editDistance(typo.lowercased(), correction.lowercased())
         return distance >= 1 && distance <= maximumEditDistance(forTypoLength: typo.count)
     }
