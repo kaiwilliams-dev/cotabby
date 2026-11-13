@@ -105,7 +105,7 @@ struct WritingPaneView: View {
                     Toggle(isOn: automaticallyFixTyposBinding) {
                         SettingsRowLabel(
                             title: "Automatically Fix Typos",
-                            description: "After you press Space, replaces a misspelled word without requiring your accept key.",
+                            description: "When you finish a misspelled word with Space or , ! ?, replaces it with a confident fix without your accept key. Backspace right after undoes it.",
                             systemImage: "checkmark.circle"
                         )
                     }

@@ -199,12 +199,13 @@ final class SuggestionSettingsStoreTests: XCTestCase {
 
     // MARK: - Save / load round-trips
 
-    func test_load_automaticTypoFixingDefaultsOff() async {
+    func test_load_automaticTypoFixingAndClipboardContextDefaultOn() async {
         let defaults = makeIsolatedDefaults()
 
         let data = SuggestionSettingsStore(userDefaults: defaults).load(configuration: .standard)
 
-        XCTAssertFalse(data.automaticallyFixTypos)
+        XCTAssertTrue(data.automaticallyFixTypos)
+        XCTAssertTrue(data.isClipboardContextEnabled)
     }
 
     func test_load_menuBarIconDefaultsVisible() async {

@@ -366,7 +366,7 @@ struct SuggestionSettingsStore {
                 ?? Self.defaultCustomWordCountHighWords
         )
         let resolvedClipboardContextEnabled =
-            userDefaults.object(forKey: Self.clipboardContextEnabledDefaultsKey) as? Bool ?? false
+            userDefaults.object(forKey: Self.clipboardContextEnabledDefaultsKey) as? Bool ?? true
         // Defaults to true: knowing the app/window/domain is the difference between on-topic and
         // generic suggestions, the data never leaves the device, and the capture is one cached
         // Accessibility read per field. Users who want fully context-free prompts can switch it off.
@@ -392,7 +392,7 @@ struct SuggestionSettingsStore {
             )
         }()
         let resolvedAutomaticallyFixTypos =
-            userDefaults.object(forKey: Self.automaticallyFixTyposDefaultsKey) as? Bool ?? false
+            userDefaults.object(forKey: Self.automaticallyFixTyposDefaultsKey) as? Bool ?? true
         // Defaults to false so the metrics ring buffer stays empty until the user explicitly opts
         // in from the Performance pane.
         let resolvedPerformanceTrackingEnabled =

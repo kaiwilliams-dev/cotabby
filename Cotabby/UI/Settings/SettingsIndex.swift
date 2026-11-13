@@ -371,7 +371,7 @@ enum SettingsItem: String, CaseIterable, Identifiable {
         case .hideSuggestionsOnTypo: return "Pause completions while a word looks misspelled."
         case .offerTypoCorrections: return "Offer a green replacement for the misspelled word."
         case .spellingDictionaries: return "Dictionaries used to detect typos."
-        case .automaticallyFixTypos: return "Replace a misspelled word right after you press Space."
+        case .automaticallyFixTypos: return "Replace a misspelled word as you finish it with Space or , ! ?"
         case .extendedContext: return "A glossary or notes sent with every suggestion."
         case .typingHistory: return "Learn from what you type, and import Cotypist history."
         case .contextLivePreview: return "A real field that exercises the full pipeline."
